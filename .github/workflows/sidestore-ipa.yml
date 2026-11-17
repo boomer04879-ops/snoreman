@@ -1,0 +1,41 @@
+name: SideStore unsigned IPA
+on:
+  workflow_dispatch:
+  push:
+    branches: [new]
+    paths:
+      - .github/workflows/sidestore-ipa.yml
+      - scripts/build-sidestore.sh
+      - app.config.js
+      - plugins/with-sidestore-entitlements.js
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Build device Release app and package unsigned IPA
+        run: bash scripts/build-sidestore.sh
+      - name: Upload IPA and checksum
+        uses: actions/upload-artifact@v4
+        with:
+          name: Snoreman-SideStore
+          path: |
+            build/Snoreman-unsigned.ipa
+            build/Snoreman-unsigned.ipa.sha256
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Snoreman-build-logs
+          path: build/logs
+          if-no-files-found: ignore
+          retention-days: 14
