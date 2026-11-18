@@ -28,7 +28,7 @@ jobs:
           for p in pathlib.Path('logs').rglob('*'):
             if not p.is_file(): continue
             lines=p.read_text(errors='replace').splitlines()
-            selected=[l for l in lines if re.search(r'main.jsbundle|Products/Applications|ARCHIVE SUCCEEDED|Print :|lipo|microphone',l,re.I)]
-            excerpt='\n'.join(selected[-25:] + ['--- LAST LINES ---'] + lines[-20:])[-10000:]
+            selected=[l for l in lines if re.search(r'main.jsbundle|Products/Applications|ARCHIVE SUCCEEDED',l,re.I) and 'warning:' not in l]
+            excerpt='\n'.join(selected[-12:])[-3800:]
             excerpt=excerpt.replace('%','%25').replace('\r','%0D').replace('\n','%0A')
             print(f'::warning title={p.name}::{excerpt}')
