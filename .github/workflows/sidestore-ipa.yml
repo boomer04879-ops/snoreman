@@ -6,6 +6,7 @@ on:
     paths:
       - .github/workflows/sidestore-ipa.yml
       - scripts/build-sidestore.sh
+      - scripts/package-sidestore.sh
       - app.config.js
       - plugins/with-sidestore-entitlements.js
 permissions:
