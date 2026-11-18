@@ -9,7 +9,7 @@ on:
       - app.config.js
       - plugins/with-sidestore-entitlements.js
 permissions:
-  contents: read
+  contents: write
 jobs:
   build:
     runs-on: macos-15-intel
@@ -30,6 +30,30 @@ jobs:
             build/Snoreman-unsigned.ipa
             build/Snoreman-unsigned.ipa.sha256
           if-no-files-found: error
+          retention-days: 14
+      - name: Publish downloadable IPA
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="sidestore-1.1.13-${{ github.run_number }}"
+          cat > build/release-notes.md <<'NOTES'
+          Snoreman 1.1.13, unsigned iPhoneOS Release build for SideStore.
+          Download Snoreman-unsigned.ipa, then install using SideStore → My Apps → +.
+          SideStore signs the app with your Apple account. Physical-device testing remains required.
+          Original source: https://github.com/timqian/snoreman (16733d5b3b17b6ac76356e4641d99baadd072269).
+          Changes: standalone bundle identifier, remove upstream EAS linkage and unused APNs entitlement, add unsigned device build and packaging. Core recording, detection, playback and local storage code unchanged.
+          Copyright (c) 2026 timqian. Source and modifications: CC BY-NC-SA 4.0.
+          https://creativecommons.org/licenses/by-nc-sa/4.0/
+          NOTES
+          gh release create "$tag" build/Snoreman-unsigned.ipa build/Snoreman-unsigned.ipa.sha256 build/logs/validation.json LICENSE \
+            --target "$GITHUB_SHA" --title "Snoreman 1.1.13 for SideStore" --notes-file build/release-notes.md
+      - name: Preserve native app if packaging fails
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Snoreman-native-app
+          path: build/Snoreman-app.zip
+          if-no-files-found: ignore
           retention-days: 14
       - name: Upload build logs
         if: always()
