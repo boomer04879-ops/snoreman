@@ -17,6 +17,7 @@ jobs:
           github-token: ${{ github.token }}
           path: logs
       - name: Read full job log
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh api repos/boomer04879-ops/snoreman/actions/jobs/134221301454/logs > logs/full-job.txt
