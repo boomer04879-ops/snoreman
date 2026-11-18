@@ -1,0 +1,29 @@
+name: Inspect iOS build logs
+on:
+  workflow_dispatch:
+  push:
+    paths: [.github/workflows/inspect-logs.yml]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: Snoreman-build-logs
+          run-id: 44134804236
+          github-token: ${{ github.token }}
+          path: logs
+      - name: Report build errors
+        shell: python
+        run: |
+          import pathlib, re
+          for p in pathlib.Path('logs').rglob('*'):
+            if not p.is_file(): continue
+            lines=p.read_text(errors='replace').splitlines()
+            selected=[l for l in lines if re.search(r'error:|error |\[!\]|failed|ARCHIVE SUCCEEDED|ARCHIVE FAILED|fatal:',l,re.I)]
+            excerpt='\n'.join(selected[-25:] + ['--- LAST LINES ---'] + lines[-20:])[-10000:]
+            excerpt=excerpt.replace('%','%25').replace('\r','%0D').replace('\n','%0A')
+            print(f'::warning title={p.name}::{excerpt}')
