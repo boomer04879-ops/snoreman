@@ -16,6 +16,10 @@ jobs:
           run-id: 44134804236
           github-token: ${{ github.token }}
           path: logs
+      - name: Read full job log
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api repos/boomer04879-ops/snoreman/actions/jobs/134221301454/logs > logs/full-job.txt
       - name: Report build errors
         shell: python
         run: |
@@ -23,7 +27,7 @@ jobs:
           for p in pathlib.Path('logs').rglob('*'):
             if not p.is_file(): continue
             lines=p.read_text(errors='replace').splitlines()
-            selected=[l for l in lines if re.search(r'error:|error |\[!\]|failed|ARCHIVE SUCCEEDED|ARCHIVE FAILED|fatal:',l,re.I)]
+            selected=[l for l in lines if re.search(r'main.jsbundle|Products/Applications|ARCHIVE SUCCEEDED|Print :|lipo|microphone',l,re.I)]
             excerpt='\n'.join(selected[-25:] + ['--- LAST LINES ---'] + lines[-20:])[-10000:]
             excerpt=excerpt.replace('%','%25').replace('\r','%0D').replace('\n','%0A')
             print(f'::warning title={p.name}::{excerpt}')
