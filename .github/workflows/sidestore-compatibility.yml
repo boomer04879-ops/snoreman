@@ -1,0 +1,37 @@
+name: Repackage Snoreman for SideStore
+on:
+  workflow_dispatch:
+  push:
+    branches: [new]
+    paths:
+      - .github/workflows/sidestore-compatibility.yml
+permissions:
+  contents: write
+jobs:
+  package:
+    runs-on: macos-15-intel
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Retrieve the verified device build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download sidestore-1.1.13-repack-1 --pattern Snoreman-unsigned.ipa --dir original
+          cd original
+          echo '904b740da68d1e432c6b4952a9c82a307ef62e2d631ec4e2d8237d66c0346212  Snoreman-unsigned.ipa' | shasum -a 256 -c
+      - name: Add local signatures and verify the IPA
+        run: bash scripts/repack-sidestore.sh original/Snoreman-unsigned.ipa build
+      - name: Publish the compatibility build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cat > build/notes.md <<'NOTES'
+          Snoreman 1.1.13 for SideStore. This package applies ad hoc signatures to the app and its embedded frameworks, restores executable permissions, and contains a standard Payload directory. SideStore must re-sign it for the device. The package passed macOS code signature verification. Installation on an iPhone remains untested.
+
+          Original work by timqian, https://github.com/timqian/snoreman. The app is based on commit 16733d5b3b17b6ac76356e4641d99baadd072269, with a separate bundle identifier and sideload build configuration. Original and modified material are available under CC BY-NC-SA 4.0 at https://creativecommons.org/licenses/by-nc-sa/4.0/.
+          NOTES
+          gh release create "sidestore-1.1.13-compat-$(printf '%s' "$GITHUB_RUN_NUMBER")" \
+            build/Snoreman-SideStore-1.1.13-r2.ipa build/Snoreman-SideStore-1.1.13-r2.ipa.sha256 LICENSE \
+            --target "$GITHUB_SHA" --title "Snoreman 1.1.13 SideStore compatibility build" \
+            --notes-file build/notes.md --prerelease
